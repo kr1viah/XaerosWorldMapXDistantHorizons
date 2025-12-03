@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "xwmxdh",
+  "version": "${version}",
+  "name": "xwmxdh",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/xwmxdh/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "kr1v.xwmxdh.client.XwmxdhClient"
+    ],
+    "main": [
+      "kr1v.xwmxdh.Xwmxdh"
+    ]
+  },
+  "mixins": [
+    "xwmxdh.mixins.json",
+    {
+      "config": "xwmxdh.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${minecraft_version}"
+  }
+}
