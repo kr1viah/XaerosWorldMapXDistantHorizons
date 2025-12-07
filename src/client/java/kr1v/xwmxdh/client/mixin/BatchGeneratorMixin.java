@@ -4,8 +4,9 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.core.generation.BatchGenerator;
-import kr1v.xwmxdh.client.XwmxdhClient;
+import kr1v.xwmxdh.Xwmxdh;
 import loaderCommon.fabric.com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Mixin;
 
@@ -22,9 +23,9 @@ public class BatchGeneratorMixin {
             ChunkWrapper chunk1 = (ChunkWrapper) chunkWrapper[0];
 
             Chunk chunk = chunk1.getChunk();
+            ChunkPos pos = chunk.getPos();
 
-//            XwmxdhClient.submitForWrite(chunk);
-            XwmxdhClient.writeChunkDirect(chunk);
+            Xwmxdh.put(pos.x, pos.z, chunk);
 
             resultConsumer.accept(chunkWrapper);
         };

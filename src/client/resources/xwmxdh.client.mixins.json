@@ -7,9 +7,8 @@
   ],
   "mixins": [
     "BatchGeneratorMixin",
-    "BlockStateShortShapeCacheMixin",
-    "MapProcessorMixin",
-    "MapWriterAccessor"
+    "MapWriterMixin",
+    "WorldDataReaderMixin"
   ],
   "injectors": {
     "defaultRequire": 1
