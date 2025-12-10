@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
@@ -92,8 +93,10 @@ public class DhTerrainDataWorldChunkWrapper extends WorldChunk {
     }
 
     private DhApiTerrainDataPoint getDataPointAt(int x, int y, int z) {
-        var data = Xwmxdh.chunkManager.terrain.getSingleDataPointAtBlockPos(level, this.pos.x*16 + x, y, this.pos.z*16 + z, Xwmxdh.chunkManager.softCache);
-        return data.payload;
+        if (x > 16 || z > 16) {
+            return Xwmxdh.chunkManager.terrain.getSingleDataPointAtBlockPos(level, x, y, z, Xwmxdh.chunkManager.softCache).payload;
+        }
+        return Xwmxdh.chunkManager.terrain.getSingleDataPointAtBlockPos(level, this.pos.x*16 + x, y, this.pos.z*16 + z, Xwmxdh.chunkManager.softCache).payload;
     }
 
     private BlockState blockStateAt(BlockPos pos) {
@@ -102,7 +105,11 @@ public class DhTerrainDataWorldChunkWrapper extends WorldChunk {
 
     @Override
     public BlockState getBlockState(BlockPos pos) {
-        return blockStateAt(pos);
+        try {
+            return blockStateAt(pos);
+        } catch (NullPointerException ignored) {
+            return Blocks.AIR.getDefaultState();
+        }
     }
 
     @Override

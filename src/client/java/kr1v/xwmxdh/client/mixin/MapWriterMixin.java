@@ -7,6 +7,8 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.core.config.Config;
 import kr1v.xwmxdh.Xwmxdh;
 import kr1v.xwmxdh.client.XwmxdhClient;
@@ -14,6 +16,7 @@ import net.minecraft.block.Block;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -62,6 +65,12 @@ public abstract class MapWriterMixin {
             }
             XwmxdhClient.t = null;
         }, "Xaero's world map map writer")).start();
+    }
+
+    // always do the full tiles to update
+    @WrapOperation(method = "onRender", at = @At(value = "INVOKE", target = "Ljava/lang/System;nanoTime()J", ordinal = 2))
+    private long no(Operation<Long> original) {
+        return 0;
     }
 
     @WrapMethod(method = "writeMap")
@@ -135,13 +144,14 @@ public abstract class MapWriterMixin {
         return original2;
     }
 
+    @SuppressWarnings("unchecked")
     @WrapOperation(method = {"loadPixel", "loadPixelHelp"}, at = @At(value = "INVOKE", target = "Lxaero/map/biome/BiomeGetter;getBiome(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/registry/Registry;)Lnet/minecraft/registry/RegistryKey;"))
     private RegistryKey<Biome> getBiome(BiomeGetter instance, World world, BlockPos pos, Registry<Biome> biomeRegistry, Operation<RegistryKey<Biome>> original, @Local(argsOnly = true) WorldChunk worldChunk) {
         RegistryKey<Biome> original2 = original.call(instance, world, pos, biomeRegistry);
         if (original2.equals(UNKNOWN) || original2.equals(PLAINS)) {
-            RegistryKey<Biome> original3 = world.getBiome(pos).getKey().orElse(UNKNOWN);
-            if (original3 != UNKNOWN && original3 != PLAINS)
-                original2 = original3;
+            DhApiTerrainDataPoint data = Xwmxdh.chunkManager.getAt(DhApi.Delayed.worldProxy.getSinglePlayerLevel(), pos);
+            RegistryEntry<Biome> origina = data == null ? null : (RegistryEntry<Biome>) data.biomeWrapper.getWrappedMcObject();
+            original2 = origina == null || origina.getKey().isEmpty() ? UNKNOWN : origina.getKey().get();
         }
 
         return original2;

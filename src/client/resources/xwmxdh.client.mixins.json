@@ -12,7 +12,8 @@
     "multithread.LeveledRegionMixin",
     "multithread.MapProcessorMixin",
     "multithread.MapRegionHighlightsPreparerMixin",
-    "multithread.MapTileChunkMixin"
+    "multithread.MapTileChunkMixin",
+    "multithread.WorldMapSessionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
