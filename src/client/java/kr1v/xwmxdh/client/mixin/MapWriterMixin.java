@@ -6,7 +6,6 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Local;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.core.config.Config;
@@ -50,27 +49,11 @@ public abstract class MapWriterMixin {
 
     @WrapMethod(method = "onRender")
     private void onRender(BiomeColorCalculator biomeColorCalculator, OverlayManager overlayManager, Operation<Void> original) {
-        XwmxdhClient.doStuff();
-        if (XwmxdhClient.t != null) {
-            return;
-        }
-
         if (this.mapProcessor.getCurrentWorldId() != null) {
-            Xwmxdh.chunkManager.switchh(this.mapProcessor.getCurrentWorldId());
+            Xwmxdh.chunkManager.swap(this.mapProcessor.getCurrentWorldId());
         }
 
-        (XwmxdhClient.t = new Thread(() -> {
-            synchronized (XwmxdhClient.lock) {
-                original.call(biomeColorCalculator, overlayManager);
-            }
-            XwmxdhClient.t = null;
-        }, "Xaero's world map map writer")).start();
-    }
-
-    // always do the full tiles to update
-    @WrapOperation(method = "onRender", at = @At(value = "INVOKE", target = "Ljava/lang/System;nanoTime()J", ordinal = 2))
-    private long no(Operation<Long> original) {
-        return 0;
+        original.call(biomeColorCalculator, overlayManager);
     }
 
     @WrapMethod(method = "writeMap")
@@ -86,14 +69,14 @@ public abstract class MapWriterMixin {
         return toRet;
     }
 
-    @WrapOperation(method = "writeMap", at = @At(value = "INVOKE", target = "Ljava/lang/Math;min(II)I"))
-    private int min(int a, int b, Operation<Integer> original) {
-        return b;
-    }
-
     @WrapMethod(method = "getSectionBasedHeight")
     private int getSectionBasedHeight(WorldChunk bchunk, int startY, Operation<Integer> original) {
         return bchunk.getHeight();
+    }
+
+    @WrapOperation(method = "writeMap", at = @At(value = "INVOKE", target = "Ljava/lang/Math;min(II)I"))
+    private int min(int a, int b, Operation<Integer> original) {
+        return b;
     }
 
     @Definition(id = "playerChunkX", field = "Lxaero/map/MapWriter;playerChunkX:I")
@@ -146,7 +129,7 @@ public abstract class MapWriterMixin {
 
     @SuppressWarnings("unchecked")
     @WrapOperation(method = {"loadPixel", "loadPixelHelp"}, at = @At(value = "INVOKE", target = "Lxaero/map/biome/BiomeGetter;getBiome(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/registry/Registry;)Lnet/minecraft/registry/RegistryKey;"))
-    private RegistryKey<Biome> getBiome(BiomeGetter instance, World world, BlockPos pos, Registry<Biome> biomeRegistry, Operation<RegistryKey<Biome>> original, @Local(argsOnly = true) WorldChunk worldChunk) {
+    private RegistryKey<Biome> getBiome(BiomeGetter instance, World world, BlockPos pos, Registry<Biome> biomeRegistry, Operation<RegistryKey<Biome>> original) {
         RegistryKey<Biome> original2 = original.call(instance, world, pos, biomeRegistry);
         if (original2.equals(UNKNOWN) || original2.equals(PLAINS)) {
             DhApiTerrainDataPoint data = Xwmxdh.chunkManager.getAt(DhApi.Delayed.worldProxy.getSinglePlayerLevel(), pos);

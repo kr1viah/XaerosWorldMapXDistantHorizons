@@ -4,7 +4,6 @@ import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
@@ -31,26 +30,79 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class DhTerrainDataWorldChunkWrapper extends WorldChunk {
-    private final IDhApiLevelWrapper level;
+public class WorldChunkWrapper extends WorldChunk {
+    private final DhApiTerrainDataPoint[][][] data;
 
-    public DhTerrainDataWorldChunkWrapper(int chunkX, int chunkZ, IDhApiLevelWrapper level) {
+    public WorldChunkWrapper(int chunkX, int chunkZ, IDhApiLevelWrapper level, DhApiTerrainDataPoint[][][] data) {
         super((World) level.getWrappedMcObject(), new ChunkPos(chunkX, chunkZ), UpgradeData.NO_UPGRADE_DATA, new ChunkTickScheduler<>(), new ChunkTickScheduler<>(), 0L, null, null, null);
-        this.level = level;
-        //        World world = (World) level.getWrappedMcObject();
-//        new Thread(() -> {
-//            for (int x = 0; x < 16; x++) {
-//                for (int z = 0; z < 16; z++) {
-//                    for (int y = world.getBottomY(); world.isInHeightLimit(y); y++) {
-//                        getDataPointAt(x, y, z);
-//                    }
-//                }
-//            }
-//        }, "Cache warmer thread").start();
+        this.data = data;
     }
+
+    // bottomYBlockPos is the actual block position (aka inclusive)
+    // topYBlockPos is the block above the actual block position (aka exclusive)
+
+    private DhApiTerrainDataPoint getDataPointAt(int x, int y, int z) {
+        int relX = Math.floorMod(x, 16);
+        int relZ = Math.floorMod(z, 16);
+
+        DhApiTerrainDataPoint[] column = data[relX][relZ];
+
+        for (var pos : column) {
+            if (pos.bottomYBlockPos <= y && y < pos.topYBlockPos) {
+                return pos;
+            }
+        }
+        throw new NoSuchElementException();
+    }
+
+    private BlockState blockStateAt(int x, int y, int z) {
+        return (BlockState) getDataPointAt(x, y, z).blockStateWrapper.getWrappedMcObject();
+    }
+
+    private BlockState blockStateAt(BlockPos pos) {
+        return blockStateAt(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    @Override
+    public BlockState getBlockState(BlockPos pos) {
+        return blockStateAt(pos);
+    }
+
+    @Override
+    public FluidState getFluidState(BlockPos pos) {
+        return blockStateAt(pos).getFluidState();
+    }
+
+    @Override
+    public FluidState getFluidState(int x, int y, int z) {
+        return blockStateAt(x, y, z).getFluidState();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public RegistryEntry<Biome> getBiomeForNoiseGen(int biomeX, int biomeY, int biomeZ) {
+        return (RegistryEntry<Biome>) getDataPointAt(biomeX, biomeY, biomeZ).biomeWrapper.getWrappedMcObject();
+    }
+
+
+
+
+    @Override
+    public ChunkLevelType getLevelType() {
+        return ChunkLevelType.FULL;
+    }
+
+    @Override
+    public World getWorld() {
+        return super.getWorld();
+    }
+
+
+
 
     @Override
     public void setUnsavedListener(UnsavedListener unsavedListener) {
@@ -86,40 +138,6 @@ public class DhTerrainDataWorldChunkWrapper extends WorldChunk {
     public GameEventDispatcher getGameEventDispatcher(int ySectionCoord) {
         throw new NotImplementedException();
 //        return super.getGameEventDispatcher(ySectionCoord);
-    }
-
-    private BlockState blockStateAt(int x, int y, int z) {
-        return (BlockState) getDataPointAt(x, y, z).blockStateWrapper.getWrappedMcObject();
-    }
-
-    private DhApiTerrainDataPoint getDataPointAt(int x, int y, int z) {
-        if (x > 16 || z > 16) {
-            return Xwmxdh.chunkManager.terrain.getSingleDataPointAtBlockPos(level, x, y, z, Xwmxdh.chunkManager.softCache).payload;
-        }
-        return Xwmxdh.chunkManager.terrain.getSingleDataPointAtBlockPos(level, this.pos.x*16 + x, y, this.pos.z*16 + z, Xwmxdh.chunkManager.softCache).payload;
-    }
-
-    private BlockState blockStateAt(BlockPos pos) {
-        return blockStateAt(pos.getX(), pos.getY(), pos.getZ());
-    }
-
-    @Override
-    public BlockState getBlockState(BlockPos pos) {
-        try {
-            return blockStateAt(pos);
-        } catch (NullPointerException ignored) {
-            return Blocks.AIR.getDefaultState();
-        }
-    }
-
-    @Override
-    public FluidState getFluidState(BlockPos pos) {
-        return blockStateAt(pos).getFluidState();
-    }
-
-    @Override
-    public FluidState getFluidState(int x, int y, int z) {
-        return blockStateAt(x, y, z).getFluidState();
     }
 
     @Override
@@ -194,21 +212,10 @@ public class DhTerrainDataWorldChunkWrapper extends WorldChunk {
 //        super.loadBiomeFromPacket(buf);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public RegistryEntry<Biome> getBiomeForNoiseGen(int biomeX, int biomeY, int biomeZ) {
-        return (RegistryEntry<Biome>) getDataPointAt(biomeX, biomeY, biomeZ).biomeWrapper.getWrappedMcObject();
-    }
-
     @Override
     public void setLoadedToWorld(boolean loadedToWorld) {
         throw new NotImplementedException();
 //        super.setLoadedToWorld(loadedToWorld);
-    }
-
-    @Override
-    public World getWorld() {
-        return super.getWorld();
     }
 
     @Override
@@ -245,13 +252,6 @@ public class DhTerrainDataWorldChunkWrapper extends WorldChunk {
     public ChunkStatus getStatus() {
         return ChunkStatus.FULL;
 //        return super.getStatus();
-    }
-
-    @Override
-    public ChunkLevelType getLevelType() {
-//        throw new NotImplementedException();
-        return ChunkLevelType.FULL;
-//        return super.getLevelType();
     }
 
     @Override

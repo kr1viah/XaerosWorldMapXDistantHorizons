@@ -3,12 +3,6 @@ package kr1v.xwmxdh.client;
 import net.fabricmc.api.ClientModInitializer;
 
 public class XwmxdhClient implements ClientModInitializer {
-    public static Thread t;
-    public static final Object lock = new Object();
-
-    public static void doStuff() {
-    }
-
     @Override
     public void onInitializeClient() {
     }

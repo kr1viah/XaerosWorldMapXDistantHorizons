@@ -6,14 +6,7 @@
   "client": [
   ],
   "mixins": [
-    "MapWriterMixin",
-    "multithread.GuiMapMixin",
-    "multithread.LeafRegionMixin",
-    "multithread.LeveledRegionMixin",
-    "multithread.MapProcessorMixin",
-    "multithread.MapRegionHighlightsPreparerMixin",
-    "multithread.MapTileChunkMixin",
-    "multithread.WorldMapSessionMixin"
+    "MapWriterMixin"
   ],
   "injectors": {
     "defaultRequire": 1
